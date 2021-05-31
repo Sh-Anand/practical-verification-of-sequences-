@@ -48,11 +48,7 @@ singleton x = Sequence (Single (Element x))
 consTree : {a : Set} -> {{Sized a}} -> a -> FingerTree a -> FingerTree a
 consTree a EmptyT = Single a
 consTree a (Single b) = deep (One a) EmptyT (One b)
--- As described in the paper, we force the middle of a tree
--- *before* consing onto it; this preserves the amortized
--- bounds but prevents repeated consing from building up
--- gigantic suspensions.
-consTree a (Deep s (Four b c d e) m sf) = seq m (Deep (size a + s) (Two a b) (consTree (node3 c d e) m) sf)
+consTree a (Deep s (Four b c d e) m sf) = (Deep (size a + s) (Two a b) (consTree (node3 c d e) m) sf)
 consTree a (Deep s (Three b c d) m sf) =
     Deep (size a + s) (Four a b c d) m sf
 consTree a (Deep s (Two b c) m sf) =
@@ -71,8 +67,7 @@ x <| Sequence xs = Sequence (consTree (Element x) xs)
 snocTree : {a : Set} -> {{Sized a}} -> FingerTree a -> a -> FingerTree a
 snocTree EmptyT a = Single a
 snocTree (Single a) b = deep (One a) EmptyT (One b)
-snocTree (Deep s pr m (Four a b c d)) e = seq m
-    (Deep (s + size e) pr (snocTree m (node3 a b c)) (Two d e))
+snocTree (Deep s pr m (Four a b c d)) e = (Deep (s + size e) pr (snocTree m (node3 a b c)) (Two d e))
 snocTree (Deep s pr m (Three a b c)) d =
     Deep (s + size d) pr m (Four a b c d)
 snocTree (Deep s pr m (Two a b)) c =
@@ -98,13 +93,12 @@ addDigits3 : {a : Set} -> {{Sized a}} -> FingerTree (Node (Node a)) -> Digit (No
 appendTree4 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Node a -> Node a -> Node a -> Node a -> FingerTree (Node a) -> FingerTree (Node a)
 addDigits4 : {a : Set} -> {{Sized a}} -> FingerTree (Node (Node a)) -> Digit (Node a) -> Node a -> Node a -> Node a -> Node a -> Digit (Node a) -> FingerTree (Node (Node a)) -> FingerTree (Node (Node a))
 
-appendTree0 EmptyT xs =
-    xs
-appendTree0 xs EmptyT =
+appendTree0 EmptyT xs = xs
+appendTree0 xs EmptyT = 
     xs
 appendTree0 (Single x) xs =
     consTree x xs
-appendTree0 xs (Single x) =
+appendTree0 xs (Single x) = 
     snocTree xs x
 appendTree0 (Deep s1 pr1 m1 sf1) (Deep s2 pr2 m2 sf2) =
     Deep (s1 + s2) pr1 (addDigits0 m1 sf1 pr2 m2) sf2

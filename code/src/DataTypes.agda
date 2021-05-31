@@ -44,7 +44,10 @@ instance
 
 instance
   DigitSized : {{Sized a}} -> Sized (Digit a)
-  DigitSized .size xs = foldl (\ i x -> i + size x) 0 xs
+  DigitSized .size (One a) = size a
+  DigitSized .size (Two a b) = size a + size b
+  DigitSized .size (Three a b c) = size a + size b + size c
+  DigitSized .size (Four a b c d) = size a + size b + size c + size d
 {-# COMPILE AGDA2HS DigitSized #-}
 
 
@@ -75,9 +78,14 @@ instance
 
 instance
   NodeSized : {{Sized a}} -> Sized (Node a)
-  NodeSized .size (Node2 v _ _) = v
-  NodeSized .size (Node3 v _ _ _) = v
+  NodeSized .size (Node2 v a b) = size a + size b
+  NodeSized .size (Node3 v a b c) = size a + size b + size c 
 {-# COMPILE AGDA2HS NodeSized #-}
+
+isValidNode : {a : Set} -> {{Sized a}} -> Node a -> Bool
+isValidNode (Node2 v x₁ x₂) = v == size x₁ + size x₂
+isValidNode (Node3 v x₁ x₂ x₃) = v == size x₁ + size x₂ + size x₃
+
 
 {-# FOREIGN AGDA2HS
 {-# INLINE node2 #-}
@@ -131,8 +139,14 @@ instance
   FingerTreeSized : {{Sized a}} -> Sized (FingerTree a)
   FingerTreeSized .size EmptyT = 0
   FingerTreeSized .size (Single a) = size a
-  FingerTreeSized .size (Deep v _ _ _) = v
+  FingerTreeSized .size (Deep v pr m sf) = v
 {-# COMPILE AGDA2HS FingerTreeSized #-}
+
+
+isValidFingerTree : {a : Set} -> ⦃ Sized a ⦄ -> FingerTree a -> Bool 
+isValidFingerTree EmptyT = true
+isValidFingerTree (Single x) = true
+isValidFingerTree (Deep v pr m sf) = v == size pr + size m + size sf
 
 
 -- {-# FOREIGN AGDA2HS
@@ -191,12 +205,6 @@ instance
   ElemSized .size _ = 1
 {-# COMPILE AGDA2HS ElemSized #-}
 
--- defaultShowList doesn't exist on the Haskell side, so this is a quick workaround to it
-{-# FOREIGN AGDA2HS
-instance (Show a) => Show (Elem a) where
-  showsPrec p (Element a) = showsPrec p a 
-#-}
-
 instance
   ElemShow : {{Show a}} -> Show (Elem a)
   ElemShow .showsPrec p (Element a) = showsPrec p a
@@ -206,13 +214,14 @@ instance
 
 --Sequences
 data Seq (a : Set) : Set where
-  Sequence : FingerTree (Elem a) -> Seq a
+  Sequence : (xs : FingerTree (Elem a))  -> Seq a
 {-# COMPILE AGDA2HS Seq #-}
 
 --gets the fingertree from the given sequence
 getTreeFromSequence : {a : Set} -> Seq a -> FingerTree (Elem a)
 getTreeFromSequence (Sequence xs) = xs
 {-# COMPILE AGDA2HS getTreeFromSequence #-} 
+
 
 
 instance
@@ -222,7 +231,7 @@ instance
 
 instance
   SeqFunctor : Functor Seq
-  SeqFunctor .fmap f (Sequence xs) = Sequence (fmap (fmap f) xs)
+  SeqFunctor .fmap f (Sequence xs) = Sequence ((fmap (fmap f) xs))
 {-# COMPILE AGDA2HS SeqFunctor #-}
 
 instance
@@ -234,6 +243,9 @@ instance
   SeqSized : {a : Set} -> Sized (Seq a)
   SeqSized .size (Sequence xs) = size xs
 {-# COMPILE AGDA2HS SeqSized #-}
+
+isValidSeq : {a : Set} -> Seq a -> Bool
+isValidSeq (Sequence xs) = isValidFingerTree xs
 
 --get length of the current sequence
 length : {a : Set} -> Seq a -> Int
@@ -366,9 +378,3 @@ viewRTreeToviewR (SnocRTree xs' (Element x)) = Sequence xs' :> x
 viewr : {a : Set} -> Seq a -> ViewR a
 viewr (Sequence xs)  =  viewRTreeToviewR (viewRTree xs)
 {-# COMPILE AGDA2HS viewr #-}
-
-data Singleton {a} {A : Set a} (x : A) : Set a where
-  _with≡_ : (y : A) → x ≡ y → Singleton x
-
-inspect : ∀ {a} {A : Set a} (x : A) → Singleton x
-inspect x = x with≡ refl
