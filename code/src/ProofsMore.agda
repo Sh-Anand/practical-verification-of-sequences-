@@ -1,5 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
-
 module ProofsMore where
 
 open import Haskell.Prelude renaming (length to lengthF)
@@ -284,19 +282,6 @@ seqPrepend x (Sequence (Deep v (Four a@(Element y) b@(Element x₁) c@(Element x
 -- Simple roundtrip properties
 ------------------------------
 
-
-toListRoundtrip : {a : Set} -> (xs : Seq a) -> toList xs ≡ toList (fromList (toList xs))
-toListRoundtrip Empty = refl
-toListRoundtrip (Sequence (Single (Element x))) = refl
-toListRoundtrip (Sequence (Deep v pr m sf)) = 
-    begin
-        foldr _∷_ [] (Sequence (Deep v pr m sf))
-    =⟨ {!   !} ⟩
-        foldr _∷_ [] (foldr _<|_ (Sequence EmptyT) (foldr (flip (foldr _∷_)) (foldr (flip (foldr (flip (foldr _∷_)))) (foldr (flip (foldr _∷_)) [] sf) m) pr))
-    =⟨⟩
-        foldr _∷_ [] (foldr _<|_ (Sequence EmptyT) (foldr _∷_ [] (Sequence (Deep v pr m sf))))
-    ∎
-
 fromListRoundtrip : {a : Set} -> (xs : List a) -> xs ≡ toList (fromList xs)
 fromListRoundtrip [] = refl
 fromListRoundtrip (x ∷ xs) = 
@@ -310,4 +295,12 @@ fromListRoundtrip (x ∷ xs) =
         toList (foldr _<|_ (Sequence EmptyT) (x ∷ xs))
     =⟨⟩ 
         toList (fromList (x ∷ xs))
+    ∎
+
+toListRoundtrip : {a : Set} -> (xs : Seq a) -> toList xs ≡ toList (fromList (toList xs))
+toListRoundtrip xs = 
+    begin
+        toList xs
+    =⟨ fromListRoundtrip (toList xs) ⟩
+        toList (fromList (toList xs))
     ∎

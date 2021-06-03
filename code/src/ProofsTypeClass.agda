@@ -8,6 +8,11 @@ open import Project
 
 open import Preconditions
 
+open import ProofAssistant
+
+open import ProofsConcat
+
+open import ProofsMore
 
 --------------------------
 -- Proving functor laws
@@ -405,4 +410,91 @@ foldableViewLLaw2 f g (x :< xs) =
         (f ∘ g) x <> foldMap (f ∘ g) xs
     =⟨⟩
         foldMap (f ∘ g) (x :< xs)
+    ∎
+
+
+-- Monoid Sequences
+-- Law 1 : mconcat [x] = x
+-- Law 2 : mconcat (map mconcat xss) = mconcat (concat xss)
+
+monoidSeqLaw1 : {a : Set} -> (xs : Seq a) -> mconcat ⦃ SeqMonoid ⦄ (xs ∷ []) ≡ xs
+monoidSeqLaw1 Empty = refl
+monoidSeqLaw1 (Sequence (Single x)) = refl
+monoidSeqLaw1 (Sequence (Deep x x₁ xs x₂)) = refl
+
+toListMonoidConcat : {a : Set} -> (xs ys : List (Seq a)) -> toList (mconcat (xs ++ ys)) ≡ toList (mconcat xs <> mconcat ys)
+toListMonoidConcat [] ys = 
+    begin
+        toList (mconcat ys)
+    =⟨ cong toList (sym (><Emptyxs (mconcat ys))) ⟩
+        toList (empty <> mconcat ys)
+    ∎
+toListMonoidConcat (x ∷ xs) ys = 
+    begin
+        toList (mconcat (x ∷ (xs ++ ys)))
+    =⟨⟩
+        toList (x <> mconcat (xs ++ ys))
+    =⟨ toListSeqConcatSplit x (mconcat (xs ++ ys)) ⟩
+        toList x ++ toList (mconcat (xs ++ ys))
+    =⟨ cong (toList x ++_) (toListMonoidConcat xs ys) ⟩
+        toList x ++ toList (mconcat xs <> mconcat ys)
+    =⟨ sym (toListSeqConcatSplit x (mconcat xs <> mconcat ys)) ⟩
+        toList (x <> mconcat xs <> mconcat ys) 
+    =⟨ (sym (associativeConcatSeq x (mconcat xs) (mconcat ys))) ⟩
+        toList ((x <> mconcat xs) <> mconcat ys)
+    =⟨⟩
+        toList (mconcat (x ∷ xs) <> mconcat ys)
+    ∎
+
+monoidSeqLaw2 : {a : Set} -> (xss : List (List (Seq a))) -> toList (mconcat (map mconcat xss)) ≡ toList (mconcat (concat xss)) 
+monoidSeqLaw2 [] = refl
+monoidSeqLaw2 (xs ∷ xss) = 
+    begin
+        toList (mconcat (map mconcat (xs ∷ xss)))
+    =⟨⟩
+        toList (mconcat (mconcat xs ∷ (map mconcat xss)))
+    =⟨⟩ 
+        toList (mconcat xs <> mconcat (map mconcat xss))
+    =⟨ toListSeqConcatSplit (mconcat xs) (mconcat (map mconcat xss)) ⟩
+        toList (mconcat xs) ++ toList (mconcat (map mconcat xss))
+    =⟨ cong (toList (mconcat xs) ++_) (monoidSeqLaw2 xss)⟩
+        toList (mconcat xs) ++ toList (mconcat (concat xss))
+    =⟨ sym (toListSeqConcatSplit (mconcat xs) (mconcat (concat xss))) ⟩
+        toList (mconcat xs <> mconcat (concat xss))
+    =⟨ sym (toListMonoidConcat xs (concat xss)) ⟩ 
+        toList (mconcat (xs ++ concat xss))
+    =⟨⟩ 
+        toList (mconcat (concat (xs ∷ xss)))
+    ∎
+
+
+---------------
+-- Applicative laws
+-- law 1 : pure id <*> x ≡ x
+
+mapIdXs : {a : Set} -> (xs : List a) -> map id xs ≡ xs
+mapIdXs [] = refl
+mapIdXs (x ∷ xs) = 
+    begin
+        x ∷ map id xs
+    =⟨ cong (x ∷_) (mapIdXs xs) ⟩
+        x ∷ xs
+    ∎
+
+applicativeSeqLaw1 : {a : Set} -> (xs : Seq a) -> toList (pure id <*> xs) ≡ toList xs
+applicativeSeqLaw1 Empty = refl
+applicativeSeqLaw1 (Sequence (Single (Element x))) = refl
+applicativeSeqLaw1 (Sequence (Deep v pr m sf)) =
+    begin
+        toList (fromList ((id ∷ []) <*> (toList (Sequence (Deep v pr m sf)))))
+    =⟨⟩
+        toList (fromList (concatMap (λ f → map f (toList (Sequence (Deep v pr m sf)))) (id ∷ [])))
+    =⟨⟩
+        toList (fromList ((map id (toList (Sequence (Deep v pr m sf)))) ++ []))
+    =⟨ cong (λ xs → toList (fromList (xs ++ []))) (mapIdXs (toList (Sequence (Deep v pr m sf)))) ⟩
+        toList (fromList ((toList (Sequence (Deep v pr m sf))) ++ []))
+    =⟨ cong (toList ∘ fromList) (sym (identityConcatList (toList (Sequence (Deep v pr m sf))))) ⟩
+        toList (fromList (toList (Sequence (Deep v pr m sf))))
+    =⟨ sym (toListRoundtrip (Sequence (Deep v pr m sf))) ⟩
+        toList (Sequence (Deep v pr m sf))
     ∎

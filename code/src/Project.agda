@@ -82,16 +82,16 @@ Sequence xs |> x = Sequence (snocTree xs (Element x))
 {-# COMPILE AGDA2HS _|>_ #-}
 
 --Machine generate code taken from the source of Data.Sequence.Internal
-appendTree0 : {a : Set} -> FingerTree (Elem a) -> FingerTree (Elem a) -> FingerTree (Elem a)
-addDigits0 : {a : Set} -> FingerTree (Node (Elem a)) -> Digit (Elem a) -> Digit (Elem a) -> FingerTree (Node (Elem a)) -> FingerTree (Node (Elem a))
-appendTree1 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Node a -> FingerTree (Node a) -> FingerTree (Node a)
-addDigits1 : {a : Set} -> {{Sized a}} -> FingerTree (Node (Node a)) -> Digit (Node a) -> Node a -> Digit (Node a) -> FingerTree (Node (Node a)) -> FingerTree (Node (Node a))
-appendTree2 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Node a -> Node a -> FingerTree (Node a) -> FingerTree (Node a)
-addDigits2 : {a : Set} -> {{Sized a}} -> FingerTree (Node (Node a)) -> Digit (Node a) -> Node a -> Node a -> Digit (Node a) -> FingerTree (Node (Node a)) -> FingerTree (Node (Node a))
-appendTree3 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Node a -> Node a -> Node a -> FingerTree (Node a) -> FingerTree (Node a)
-addDigits3 : {a : Set} -> {{Sized a}} -> FingerTree (Node (Node a)) -> Digit (Node a) -> Node a -> Node a -> Node a -> Digit (Node a) -> FingerTree (Node (Node a)) -> FingerTree (Node (Node a))
-appendTree4 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Node a -> Node a -> Node a -> Node a -> FingerTree (Node a) -> FingerTree (Node a)
-addDigits4 : {a : Set} -> {{Sized a}} -> FingerTree (Node (Node a)) -> Digit (Node a) -> Node a -> Node a -> Node a -> Node a -> Digit (Node a) -> FingerTree (Node (Node a)) -> FingerTree (Node (Node a))
+appendTree0 : {a : Set} -> ⦃ Sized a ⦄ -> FingerTree a -> FingerTree a -> FingerTree a
+addDigits0 : {a : Set} -> ⦃ Sized a ⦄ -> FingerTree (Node a) -> Digit a -> Digit a -> FingerTree (Node a) -> FingerTree (Node a)
+appendTree1 : {a : Set} -> {{Sized a}} -> FingerTree a -> a -> FingerTree a -> FingerTree a
+addDigits1 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Digit a -> a -> Digit a -> FingerTree (Node a) -> FingerTree (Node a)
+appendTree2 : {a : Set} -> {{Sized a}} -> FingerTree a -> a -> a -> FingerTree a -> FingerTree a
+addDigits2 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Digit a -> a -> a -> Digit a -> FingerTree (Node a) -> FingerTree (Node a)
+appendTree3 : {a : Set} -> {{Sized a}} -> FingerTree a -> a -> a -> a -> FingerTree a -> FingerTree a
+addDigits3 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Digit a -> a -> a -> a -> Digit a -> FingerTree (Node a) -> FingerTree (Node a)
+appendTree4 : {a : Set} -> {{Sized a}} -> FingerTree a -> a -> a -> a -> a -> FingerTree a -> FingerTree a
+addDigits4 : {a : Set} -> {{Sized a}} -> FingerTree (Node a) -> Digit a -> a -> a -> a -> a -> Digit a -> FingerTree (Node a) -> FingerTree (Node a)
 
 appendTree0 EmptyT xs = xs
 appendTree0 xs EmptyT = 

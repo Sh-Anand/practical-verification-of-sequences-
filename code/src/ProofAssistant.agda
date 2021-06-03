@@ -50,13 +50,21 @@ postulate
 -- splitSnocTree is postulated because we have proven the consTree case and snocTree is simply the mirror of that
 postulate 
     isTrueFingerTreeSub : {a : Set} -> ⦃ _ : Sized a ⦄ -> (v : Int) -> (pr : Digit a) -> (xs : FingerTree (Node a)) -> (sf : Digit a) -> IsTrue (isValidFingerTree (Deep v pr xs sf)) -> IsTrue (isValidFingerTree xs)
-    appendTree0xsEmpty : {a : Set} -> (xs : FingerTree (Elem a)) -> appendTree0 xs EmptyT ≡ xs
     appendTree0xsSingle : {a : Set} -> (xs : FingerTree (Elem a)) -> (x : Elem a) -> appendTree0 xs (Single x) ≡ snocTree xs x
     appendTree0Singlexs : {a : Set} -> (x : Elem a) -> (xs : FingerTree (Elem a)) -> appendTree0 (Single x) xs ≡ consTree x xs
-    appendTree1xsEmpty : {a : Set} -> (xs : FingerTree (Node (Elem a))) -> (n : Node (Elem a)) -> appendTree1 xs n EmptyT ≡ snocTree xs n
-    appendTree1Singlexs : {a : Set} -> (x : Node (Elem a)) -> (n : Node (Elem a)) -> (xs : FingerTree (Node (Elem a))) -> appendTree1 (Single x) n xs ≡ consTree x (consTree n xs)
-    appendTree1xsSingle : {a : Set} -> (xs : FingerTree (Node (Elem a))) -> (n : Node (Elem a)) -> (x : Node (Elem a)) -> appendTree1 xs n (Single x) ≡ snocTree (snocTree xs n) x
+    appendTree1xsEmpty : {a : Set} -> ⦃ _ : Sized a ⦄ -> (xs : FingerTree a) -> (n : a) -> appendTree1 xs n EmptyT ≡ snocTree xs n
+    appendTree1Singlexs : {a : Set} -> ⦃ _ : Sized a ⦄ -> (x : a) -> (n : a) -> (xs : FingerTree a) -> appendTree1 (Single x) n xs ≡ consTree x (consTree n xs)
+    appendTree1xsSingle : {a : Set} -> ⦃ _ : Sized a ⦄ -> (xs : FingerTree a) -> (n : a) -> (x : a) -> appendTree1 xs n (Single x) ≡ snocTree (snocTree xs n) x
     splitSnocTree : {a : Set} -> (n : Nat) -> (z : List a) -> (m : FingerTree (Node^ n (Elem a))) -> (x : Node^ n (Elem a)) 
                 -> foldr (node^Folder n) z (snocTree ⦃ sizedNode^ n ⦄ m x) ≡ (foldr (node^Folder n) [] m) ++ (node^Folder n x z)
     splitFoldrFingerTree : {a : Set} -> (n : Nat) -> (z : List a) -> (m : FingerTree (Node^ n (Elem a)))
                         -> foldr (node^Folder n) z m ≡ foldr (node^Folder n) [] m ++ z
+    toListSeqConcatSplit : {a : Set} -> (xs ys : Seq a) -> toList (xs >< ys) ≡ toList xs ++ toList ys
+
+appendTree0xsEmpty : {a : Set} -> (xs : FingerTree (Elem a)) -> appendTree0 xs EmptyT ≡ xs
+appendTree0xsEmpty EmptyT = refl
+appendTree0xsEmpty (Single x) = refl
+appendTree0xsEmpty (Deep x x₁ xs x₂) = refl
+
+><Emptyxs : {a : Set} -> (xs : Seq a) -> empty >< xs ≡ xs
+><Emptyxs (Sequence xs) = refl

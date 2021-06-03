@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module ProofsConcat where
 
 open import Haskell.Prelude renaming (length to lengthF)
