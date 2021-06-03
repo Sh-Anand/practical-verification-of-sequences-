@@ -471,6 +471,11 @@ monoidSeqLaw2 (xs ∷ xss) =
 ---------------
 -- Applicative laws
 -- law 1 : pure id <*> x ≡ x
+-- law 2 : pure (f x) = pure f <*> pure x
+-- law 3 : mf <*> pure y = pure (\g -> g y) <*> mf
+-- law 4 : f <*> (g <*> x) ≡ (pure (_∘_) <*> f <*> g) <*> x
+
+-- https://brightspace.tudelft.nl/content/enforced/281793-CSE3100%2b2020%2b3/07_IO_and_functors.pdf
 
 mapIdXs : {a : Set} -> (xs : List a) -> map id xs ≡ xs
 mapIdXs [] = refl
@@ -498,3 +503,48 @@ applicativeSeqLaw1 (Sequence (Deep v pr m sf)) =
     =⟨ sym (toListRoundtrip (Sequence (Deep v pr m sf))) ⟩
         toList (Sequence (Deep v pr m sf))
     ∎
+
+applicativeSeqLaw2 : {a b : Set} -> (f : a -> b) -> (x : a) -> pure ⦃ SeqApplicative ⦄ (f x) ≡ ((pure f) <*> (pure x))
+applicativeSeqLaw2 f x = refl
+
+foldMapSingletonMapList : {a b : Set} -> (x : a) -> (fs : List (a -> b)) -> foldMap (λ f → (f x ∷ [])) fs ≡ map (λ f → f x) fs
+foldMapSingletonMapList x [] = refl
+foldMapSingletonMapList x (f' ∷ fs) = 
+    begin
+        foldMap (λ f → (f x ∷ [])) (f' ∷ fs)
+    =⟨⟩
+        f' x ∷ [] ++ foldMap (λ f → (f x ∷ [])) fs
+    =⟨ cong ((f' x ∷ []) ++_) (foldMapSingletonMapList x fs) ⟩
+        f' x ∷ [] ++ map (λ f → f x) fs
+    =⟨⟩ 
+        map (λ f → f x) (f' ∷ fs)
+    ∎
+
+applicativeSeqLaw3 : {a b : Set} -> (fs : Seq (a -> b)) -> (x : a) -> (fs <*> pure x) ≡ (pure (λ f → f x) <*> fs)
+applicativeSeqLaw3 Empty x = refl
+applicativeSeqLaw3 (Sequence (Single (Element x₁))) x = refl
+applicativeSeqLaw3 (Sequence (Deep v pr m sf)) x = 
+    begin
+        (Sequence (Deep v pr m sf)) <*> Sequence (Single (Element x))
+    =⟨⟩
+        fromList (toList (Sequence (Deep v pr m sf)) <*> (x ∷ []))
+    =⟨⟩
+        fromList (concatMap (λ f → map f (x ∷ [])) (toList (Sequence (Deep v pr m sf))))
+    =⟨⟩
+        fromList (foldMap (λ f → (f x ∷ [])) (toList (Sequence (Deep v pr m sf))))
+    =⟨ cong fromList (foldMapSingletonMapList x (toList (Sequence (Deep v pr m sf)))) ⟩
+        fromList (map (λ f → f x) (toList ((Sequence (Deep v pr m sf)))))
+    =⟨ cong fromList (identityConcatList (map (λ f → f x) (toList ((Sequence (Deep v pr m sf)))))) ⟩
+        fromList (map (λ f → f x) (toList ((Sequence (Deep v pr m sf)))) ++ [])
+    =⟨⟩
+        fromList ((λ f → f x) ∷ [] <*> toList ((Sequence (Deep v pr m sf))))
+    =⟨⟩
+        Sequence (Single (Element (λ f → f x))) <*> (Sequence (Deep v pr m sf))
+    =⟨⟩ 
+        (pure (λ f → f x) <*> (Sequence (Deep v pr m sf)))
+    ∎
+
+applicativeSeqLaw4 : {a b c : Set} -> (f : Seq (b -> c)) -> (g : Seq (a -> b)) -> (x : Seq a) -> (f <*> (g <*> x)) ≡ ((pure (_∘_) <*> f <*> g) <*> x)
+applicativeSeqLaw4 f g Empty = ?
+applicativeSeqLaw4 f g (Sequence (Single (Element x))) = {!   !}
+applicativeSeqLaw4 f g (Sequence (Deep x x₁ xs x₂)) = {!   !}
