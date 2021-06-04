@@ -44,6 +44,9 @@ postulate
     lengthListConcat : {a : Set} -> (xs ys : List a) -> lengthList (xs ++ ys) ≡ lengthList xs + lengthList ys
     associativeConcatList : {a : Set} -> (x y z : List a) -> x ++ y ++ z ≡ (x ++ y) ++ z
     identityConcatList : {a : Set} -> (xs : List a) -> xs ≡ xs ++ []
+    foldMapConcat : {a b : Set} -> (f : a -> List b) -> (xs ys : List a) -> foldMap f (xs ++ ys) ≡ foldMap f xs ++ foldMap f ys
+    mapConcat : {a b : Set} -> (f : a -> b) -> (xs ys : List a) -> map f (xs ++ ys) ≡ map f xs ++ map f ys
+    mapComposition : {a b c : Set} -> (f : b -> c) -> (g : a -> b) -> (xs : List a) -> map f (map g xs) ≡ map (f ∘ g) xs
 
 -- THESE NEED TO BE PROVEN
 -- All of these can be proven because a mirror proof already exists

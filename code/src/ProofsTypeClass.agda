@@ -544,7 +544,141 @@ applicativeSeqLaw3 (Sequence (Deep v pr m sf)) x =
         (pure (λ f → f x) <*> (Sequence (Deep v pr m sf)))
     ∎
 
+listApplicativeEmpty : {a b : Set} -> (fs : List (a -> b)) -> (fs <*> []) ≡ []
+listApplicativeEmpty [] = refl
+listApplicativeEmpty (f ∷ fs) = 
+    begin
+        (f ∷ fs) <*> []
+    =⟨⟩
+        fs <*> []
+    =⟨ listApplicativeEmpty fs ⟩
+        []
+    ∎
+
+listApplicativeEmpty2 : {a b : Set} -> (xs : List a) -> (_<*>_ {List} {a} {b} [] xs) ≡ []
+listApplicativeEmpty2 [] = refl
+listApplicativeEmpty2 (x ∷ xs) = refl
+
+listMapCompose : {a b c : Set} -> (f : b -> c) -> (g : a -> b) -> (xs : List a) -> map f (map g xs) ≡ map (f ∘ g) xs
+listMapCompose f g [] = refl
+listMapCompose f g (x ∷ xs) = 
+    begin
+        map f (map g (x ∷ xs))
+    =⟨ cong ((f ∘ g) x ∷_) (listMapCompose f g xs) ⟩
+        map (f ∘ g) (x ∷ xs)
+    ∎
+
+listFoldMapMapCompose : {a b c : Set} -> (f : b -> List c) -> (g : a -> b) -> (xs : List a) -> foldMap f (map g xs) ≡ foldMap (f ∘ g) xs
+listFoldMapMapCompose f g [] = refl
+listFoldMapMapCompose f g (x ∷ xs) = 
+    begin
+        foldMap f (map g (x ∷ xs))
+    =⟨⟩
+        (f ∘ g) x <> foldMap f (map g xs)
+    =⟨ cong ((f ∘ g) x <>_) (listFoldMapMapCompose f g xs) ⟩
+        foldMap (f ∘ g) (x ∷ xs)
+    ∎
+
+mapFoldMapProperty : {a b c : Set} -> (f : b -> c) -> (g : List (a -> b)) -> (x : List a) 
+                -> foldMap (λ f' → map f' x) (map (f ∘_) g) ≡ map f (foldMap (λ f' → map f' x) g)
+mapFoldMapProperty f [] xs = refl
+mapFoldMapProperty f (g ∷ gs) xs = 
+    begin
+        foldMap (λ f' → map f' xs) (map (f ∘_) (g ∷ gs))
+    =⟨⟩
+        map (f ∘ g) xs ++ foldMap (λ f' → map f' xs) (map (f ∘_) gs)
+    =⟨ cong (map (f ∘ g) xs ++_) (mapFoldMapProperty f gs xs) ⟩
+        map (f ∘ g) xs ++ map f (foldMap (λ f' → map f' xs) gs)
+    =⟨ cong (_++ map f (foldMap (λ f' → map f' xs) gs)) (sym (mapComposition f g xs)) ⟩
+        map f (map g xs) ++ map f (foldMap (λ f' → map f' xs) gs)
+    =⟨ sym (mapConcat f (map g xs) (foldMap (λ f' → map f' xs) gs))⟩
+        map f ((map g xs) ++ (foldMap (λ f' → map f' xs) gs))
+    =⟨⟩
+        map f (foldMap (λ f' → map f' xs) (g ∷ gs))
+    ∎
+
+applicativeSeqLaw4Helper : {a b c : Set} -> (f : List (b -> c)) -> (g : List (a -> b)) -> (x : List a) 
+                    -> (foldMap (λ f' → map f' (foldMap (λ f' → map f' x) g)) f)
+                        ≡ (foldMap (λ f' → map f' x) (foldMap ((λ f' → map f' g) ∘ (_∘_)) f))
+applicativeSeqLaw4Helper [] g xs = refl
+applicativeSeqLaw4Helper (f ∷ fs) g xs = 
+    begin
+        (foldMap (λ f' → map f' (foldMap (λ f' → map f' xs) g)) (f ∷ fs))
+    =⟨⟩
+        map f (foldMap (λ f' → map f' xs) g) ++ (foldMap (λ f' → map f' (foldMap (λ f' → map f' xs) g)) fs)
+    =⟨ cong (_++ (foldMap (λ f' → map f' (foldMap (λ f' → map f' xs) g)) fs)) (sym (mapFoldMapProperty f g xs)) ⟩
+        (foldMap (λ f' → map f' xs) (map (f ∘_) g)) ++ (foldMap (λ f' → map f' (foldMap (λ f' → map f' xs) g)) fs)
+    =⟨ cong ((foldMap (λ f' → map f' xs) (map (f ∘_) g)) ++_) (applicativeSeqLaw4Helper fs g xs)  ⟩
+        (foldMap (λ f' → map f' xs) (map (f ∘_) g)) ++ (foldMap (λ f' → map f' xs) (foldMap (λ f' → map (f' ∘_) g) fs))
+    =⟨ sym (foldMapConcat (λ f' → map f' xs) (map (f ∘_) g) (foldMap (λ f' → map (f' ∘_) g) fs)) ⟩
+        (foldMap (λ f' → map f' xs) (map (f ∘_) g ++ foldMap (λ f' → map (f' ∘_) g) fs))
+    =⟨⟩
+        (foldMap (λ f' → map f' xs) (foldMap ((λ f' → map f' g) ∘ (_∘_)) (f ∷ fs)))
+    ∎
+
+
 applicativeSeqLaw4 : {a b c : Set} -> (f : Seq (b -> c)) -> (g : Seq (a -> b)) -> (x : Seq a) -> (f <*> (g <*> x)) ≡ ((pure (_∘_) <*> f <*> g) <*> x)
-applicativeSeqLaw4 f g Empty = ?
-applicativeSeqLaw4 f g (Sequence (Single (Element x))) = {!   !}
-applicativeSeqLaw4 f g (Sequence (Deep x x₁ xs x₂)) = {!   !}
+applicativeSeqLaw4 f g x = 
+    begin
+        (f <*> (g <*> x))
+    =⟨⟩
+        f <*> (fromList (foldMap (λ f' → map f' (toList x)) (toList g)))
+    =⟨⟩
+        fromList (foldMap (λ f' → map f' (toList (fromList (foldMap (λ f' → map f' (toList x)) (toList g))))) (toList f))
+    =⟨ cong (λ xs → fromList (foldMap (λ f' → map f' xs) (toList f))) (sym (fromListRoundtrip (foldMap (λ f' → map f' (toList x)) (toList g)))) ⟩
+        fromList (foldMap (λ f' → map f' (foldMap (λ f' → map f' (toList x)) (toList g))) (toList f))
+    =⟨ cong fromList (applicativeSeqLaw4Helper (toList f) (toList g) (toList x)) ⟩
+        fromList (foldMap (λ f' → map f' (toList x)) (foldMap ((λ f' → map f' (toList g)) ∘ (_∘_)) (toList f)))
+    =⟨ cong (λ xs → fromList (foldMap (λ f' → map f' (toList x)) xs)) (fromListRoundtrip (foldMap ((λ f' → map f' (toList g)) ∘ (_∘_)) (toList f))) ⟩
+        fromList (foldMap (λ f' → map f' (toList x)) (toList (fromList (foldMap ((λ f' → map f' (toList g)) ∘ (_∘_)) (toList f)))))
+    =⟨⟩
+        (fromList (foldMap ((λ f' → map f' (toList g)) ∘ (_∘_)) (toList f))) <*> x
+    =⟨ cong (λ xs → fromList xs <*> x) (sym (listFoldMapMapCompose (λ f' → map f' (toList g)) (_∘_) (toList f))) ⟩
+        (fromList (foldMap (λ f' → map f' (toList g)) (map (_∘_) (toList f)))) <*> x
+    =⟨ cong (λ xs → fromList (foldMap (λ f' → map f' (toList g)) xs) <*> x) (fromListRoundtrip (map (_∘_) (toList f))) ⟩
+        (fromList (foldMap (λ f' → map f' (toList g)) (toList (fromList ((map (_∘_) (toList f))))))) <*> x
+    =⟨⟩
+        ((fromList ((map (_∘_) (toList f)))) <*> g) <*> x
+    =⟨ cong ( λ xs → (fromList xs <*> g) <*> x) (identityConcatList (map (_∘_) (toList f))) ⟩
+        ((fromList ((map (_∘_) (toList f)) ++ [])) <*> g) <*> x
+    =⟨⟩ 
+        ((fromList (foldMap (λ f' → map f' (toList f)) ((_∘_) ∷ []))) <*> g) <*> x
+    =⟨⟩
+        ((singleton (_∘_) <*> f <*> g) <*> x)
+    =⟨⟩  
+        ((pure (_∘_) <*> f <*> g) <*> x)
+    ∎
+
+
+
+--------------------------------
+-- Monad Laws 
+-- law 1 : return x >>= f ≡ f x
+-- law 2 : mx >>= (λ x → return x) ≡ mx
+-- law 3 
+
+monadSeqLaw1 : {a b : Set} -> (f : a -> Seq b) -> (x : a) -> return x >>= f ≡ f x
+monadSeqLaw1 f x = 
+    begin
+        singleton x >>= f
+    =⟨⟩
+        foldl (λ ys x -> ys >< (f x)) empty (singleton x)
+    =⟨⟩
+        empty >< f x
+    =⟨ ><Emptyxs (f x) ⟩
+        f x
+    ∎
+
+monadSeqLaw2 : {a : Set} -> (mx : Seq a) -> mx >>= (λ x → return x) ≡ mx
+monadSeqLaw2 Empty = refl
+monadSeqLaw2 (Sequence (Single (Element x))) = refl
+monadSeqLaw2 (Sequence (Deep v pr m sf)) = 
+    begin
+        (Sequence (Deep v pr m sf)) >>= return
+    =⟨⟩
+        foldl (foldl (λ ys x -> ys >< (return x))) empty (Deep v pr m sf)
+    =⟨⟩
+        foldl (foldl (λ ys x -> ys >< (return x))) (foldl (foldl (foldl (λ ys x -> ys >< (return x)))) (foldl (foldl (λ ys x -> ys >< (return x))) empty pr) m) sf
+    =⟨ {!   !} ⟩
+        (Sequence (Deep v pr m sf))
+    ∎
