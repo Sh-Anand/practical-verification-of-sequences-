@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module ProofsTypeClass where
 
 open import Haskell.Prelude renaming (length to lengthF)
@@ -681,4 +683,202 @@ monadSeqLaw2 (Sequence (Deep v pr m sf)) =
         foldl (foldl (λ ys x -> ys >< (return x))) (foldl (foldl (foldl (λ ys x -> ys >< (return x)))) (foldl (foldl (λ ys x -> ys >< (return x))) empty pr) m) sf
     =⟨ {!   !} ⟩
         (Sequence (Deep v pr m sf))
+    ∎
+
+
+traversableDigitLaw1 : {a b : Set}
+    → {p q : Set → Set} {{ap : Applicative p}} {{aq : Applicative q}}
+    → (f : a → p b) → (t : {x : Set} → p x → q x) → (m : Digit a)
+    → (t ∘ traverse f) m ≡ traverse (t ∘ f) m
+traversableDigitLaw1 f t (One a) = 
+    begin
+        t (fmap One (f a))
+    =⟨ cong t (applicativeFmapApp One (f a)) ⟩
+        t (pure One <*> (f a))
+    =⟨ preserveApp t (pure One) (f a) ⟩
+        t (pure One) <*> t (f a)
+    =⟨ cong (_<*> t (f a)) (preservePure t One) ⟩
+        pure One <*> t (f a)
+    =⟨ sym (applicativeFmapApp One (t (f a))) ⟩
+        fmap One (t (f a))
+    ∎
+traversableDigitLaw1 f t (Two a b) =
+    begin
+        t ((Two <$> (f a)) <*> (f b))
+    =⟨ cong (λ x → t (x <*> (f b))) (applicativeFmapApp Two (f a)) ⟩
+        t (pure Two <*> (f a) <*> (f b))
+    =⟨ preserveApp t (pure Two <*> (f a)) (f b) ⟩
+        t (pure Two <*> (f a)) <*> t (f b)
+    =⟨ cong (_<*> t (f b)) (preserveApp t (pure Two) (f a)) ⟩
+        t (pure Two) <*> t (f a) <*> t (f b)
+    =⟨ cong (λ x → x <*> t (f a) <*> t (f b)) (preservePure t Two) ⟩
+        pure Two <*> t (f a) <*> t (f b)
+    =⟨ cong (_<*> (t (f b))) (sym (applicativeFmapApp Two (t (f a)))) ⟩
+        fmap Two (t (f a)) <*> (t (f b))
+    ∎
+traversableDigitLaw1 f t (Three a b c) = 
+    begin
+        t ((Three <$> (f a)) <*> (f b) <*> (f c))
+    =⟨ cong (λ x → t (x <*> (f b)<*> (f c))) (applicativeFmapApp Three (f a)) ⟩
+        t (pure Three <*> (f a) <*> (f b) <*> (f c))
+    =⟨ preserveApp t (pure Three <*> (f a) <*> (f b)) (f c) ⟩
+        t (pure Three <*> (f a) <*> (f b)) <*> t (f c)
+    =⟨ cong (_<*> t (f c)) (preserveApp t (pure Three <*> (f a)) (f b)) ⟩
+        t (pure Three <*> (f a)) <*> t (f b) <*> t (f c)
+    =⟨ cong (λ x → x <*> t (f b) <*> t (f c)) (preserveApp t (pure Three) (f a)) ⟩
+        t (pure Three) <*> t (f a) <*> t (f b) <*> t (f c)
+    =⟨ cong (λ x → x <*> t (f a) <*> t (f b) <*> t (f c)) (preservePure t Three) ⟩
+        pure Three <*> t (f a) <*> t (f b) <*> t (f c)
+    =⟨ cong (λ x → x <*> t (f b) <*> t (f c)) (sym (applicativeFmapApp Three (t (f a)))) ⟩
+        fmap Three (t (f a)) <*> (t (f b)) <*> t (f c)
+    ∎
+traversableDigitLaw1 f t (Four a b c d) = 
+    begin
+        t ((Four <$> (f a)) <*> (f b) <*> (f c) <*> (f d))
+    =⟨ cong (λ x → t (x <*> (f b)<*> (f c) <*> (f d))) (applicativeFmapApp Four (f a)) ⟩
+        t (pure Four <*> (f a) <*> (f b) <*> (f c) <*> (f d))
+    =⟨ preserveApp t (pure Four <*> (f a) <*> (f b) <*> (f c)) (f d) ⟩
+        t (pure Four <*> (f a) <*> (f b) <*> (f c)) <*> t (f d)
+    =⟨ cong (_<*> t (f d)) (preserveApp t (pure Four <*> (f a) <*> (f b)) (f c)) ⟩
+        t (pure Four <*> (f a) <*> (f b)) <*> t (f c) <*> t (f d)
+    =⟨ cong (λ x → x <*> t (f c) <*> t (f d)) (preserveApp t (pure Four <*> (f a)) (f b)) ⟩
+        t (pure Four <*> (f a)) <*> t (f b) <*> t (f c) <*> t (f d)
+    =⟨ cong (λ x → x <*> t (f b) <*> t (f c) <*> t (f d)) (preserveApp t (pure Four) (f a)) ⟩ 
+        t (pure Four) <*> t (f a) <*> t (f b) <*> t (f c) <*> t (f d)
+    =⟨ cong (λ x → x <*> t (f a) <*> t (f b) <*> t (f c) <*> t (f d)) (preservePure t Four) ⟩
+        pure Four <*> t (f a) <*> t (f b) <*> t (f c) <*> t (f d)
+    =⟨ cong (λ x → x <*> t (f b) <*> t (f c) <*> t (f d)) (sym (applicativeFmapApp Four (t (f a)))) ⟩
+        fmap Four (t (f a)) <*> (t (f b)) <*> t (f c) <*> t (f d)
+    ∎
+
+
+traversableNodeLaw1 : {a b : Set}
+    → {p q : Set → Set} {{ap : Applicative p}} {{aq : Applicative q}}
+    → (f : a → p b) → (t : {x : Set} → p x → q x) → (m : Node a)
+    → (t ∘ traverse f) m ≡ traverse (t ∘ f) m
+traversableNodeLaw1 f t (Node2 v a b) = 
+    begin
+        t ((Node2 v) <$> (f a) <*> (f b))
+    =⟨ cong (λ x → t (x <*> (f b))) (applicativeFmapApp (Node2 v) (f a)) ⟩
+        t (pure (Node2 v) <*> (f a) <*> (f b))
+    =⟨ preserveApp t (pure (Node2 v) <*> (f a)) (f b) ⟩
+        t (pure (Node2 v) <*> (f a)) <*> t (f b)
+    =⟨ cong (_<*> t (f b)) (preserveApp t (pure (Node2 v)) (f a)) ⟩
+        t (pure (Node2 v)) <*> t (f a) <*> t (f b)
+    =⟨ cong (λ x → x <*> t (f a) <*> t (f b)) (preservePure t (Node2 v)) ⟩
+        pure (Node2 v) <*> t (f a) <*> t (f b)
+    =⟨ cong (_<*> (t (f b))) (sym (applicativeFmapApp (Node2 v) (t (f a)))) ⟩
+        (Node2 v) <$> (t (f a)) <*> (t (f b))
+    ∎
+traversableNodeLaw1 f t (Node3 v a b c) = 
+    begin
+        t ((Node3 v) <$> (f a) <*> (f b) <*> (f c))
+    =⟨ cong (λ x → t (x <*> (f b) <*> (f c))) (applicativeFmapApp (Node3 v) (f a)) ⟩
+        t (pure (Node3 v) <*> (f a) <*> (f b) <*> (f c))
+    =⟨ preserveApp t (pure (Node3 v) <*> (f a) <*> (f b)) (f c) ⟩
+        t (pure (Node3 v) <*> (f a) <*> (f b)) <*> t (f c)
+    =⟨ cong (_<*> t (f c)) (preserveApp t (pure (Node3 v) <*> (f a)) (f b)) ⟩
+        t (pure (Node3 v) <*> (f a)) <*> t (f b) <*> t (f c)
+    =⟨ cong (λ x → x <*> t (f b) <*> t (f c)) (preserveApp t (pure (Node3 v)) (f a)) ⟩
+        t (pure (Node3 v)) <*> t (f a) <*> t (f b) <*> t (f c)
+    =⟨ cong (λ x → x <*> t (f a) <*> t (f b) <*> t (f c)) (preservePure t (Node3 v)) ⟩
+        pure (Node3 v) <*> t (f a) <*> t (f b) <*> t (f c)
+    =⟨ cong (λ x → x <*> t (f b) <*> t (f c)) (sym (applicativeFmapApp (Node3 v) (t (f a)))) ⟩
+        (Node3 v) <$> (t (f a)) <*> (t (f b)) <*> (t (f c))
+    ∎
+
+postulate
+    traversableNodePostulate1 : {a b : Set} → {p q : Set → Set} {{ap : Applicative p}} {{aq : Applicative q}} 
+                                → (f : a → p b) → (t : {x : Set} → p x → q x) 
+                                → (t ∘ traverse ⦃ NodeTraversable ⦄ f) ≡ traverse (t ∘ f)
+
+
+traversableFingerTreeLaw1 : {a b : Set}
+    → {p q : Set → Set} {{ap : Applicative p}} {{aq : Applicative q}}
+    → (f : a → p b) → (t : {x : Set} → p x → q x) → (m : FingerTree a)
+    → (t ∘ traverse f) m ≡ traverse (t ∘ f) m
+traversableFingerTreeLaw1 f t EmptyT = 
+    begin
+        t (pure EmptyT)
+    =⟨ preservePure t EmptyT ⟩
+        pure EmptyT
+    ∎
+traversableFingerTreeLaw1 f t (Single x) = 
+    begin
+        t (fmap Single (f x))
+    =⟨ cong t (applicativeFmapApp Single (f x)) ⟩
+        t (pure Single <*> (f x))
+    =⟨ preserveApp t (pure Single) (f x) ⟩
+        t (pure Single) <*> t (f x)
+    =⟨ cong (_<*> (t (f x))) (preservePure t Single) ⟩
+        pure Single <*> t (f x)
+    =⟨ sym (applicativeFmapApp Single (t (f x))) ⟩
+        fmap Single (t (f x))
+    ∎
+traversableFingerTreeLaw1 f t (Deep v pr m sf) =
+    begin
+        t ((Deep v <$> traverse f pr) <*> traverse (traverse f) m <*> traverse f sf)
+    =⟨ cong (λ x → t (x <*> traverse (traverse f) m <*> traverse f sf)) (applicativeFmapApp (Deep v) (traverse f pr)) ⟩
+        t (pure (Deep v) <*> traverse f pr <*> traverse (traverse f) m <*> traverse f sf)
+    =⟨ preserveApp t (pure (Deep v) <*> traverse f pr <*> traverse (traverse f) m) (traverse f sf) ⟩
+        t (pure (Deep v) <*> traverse f pr <*> (traverse (traverse f) m))  <*> t (traverse f sf)
+    =⟨ cong (_<*> t (traverse f sf)) (preserveApp t (pure (Deep v) <*> traverse f pr) (traverse (traverse f) m)) ⟩
+        t (pure (Deep v) <*> traverse f pr) <*> t (traverse (traverse f) m) <*> t (traverse f sf)
+    =⟨ cong (λ x → x <*> t (traverse (traverse f) m) <*> t (traverse f sf)) (preserveApp t (pure (Deep v)) (traverse f pr)) ⟩
+        t (pure (Deep v)) <*> t (traverse f pr) <*> t (traverse (traverse f) m) <*> t (traverse f sf)
+    =⟨ cong (λ x → x <*> t (traverse f pr) <*> t (traverse (traverse f) m) <*> t (traverse f sf)) (preservePure t (Deep v)) ⟩
+        pure (Deep v) <*> t (traverse f pr) <*> t (traverse (traverse f) m) <*> t (traverse f sf)
+    =⟨ cong (λ x → pure (Deep v) <*> x <*> t (traverse (traverse f) m) <*> t (traverse f sf)) (traversableDigitLaw1 f t pr) ⟩
+        pure (Deep v) <*> traverse (t ∘ f) pr <*> t (traverse (traverse f) m) <*> t (traverse f sf)
+    =⟨ cong (λ x → pure (Deep v) <*> traverse (t ∘ f) pr <*> x <*> t (traverse f sf)) (traversableFingerTreeLaw1 (traverse f) t m) ⟩
+        pure (Deep v) <*> traverse (t ∘ f) pr <*> traverse (t ∘ traverse f) m <*> t (traverse f sf)
+    =⟨ cong (λ x → pure (Deep v) <*> traverse (t ∘ f) pr <*> traverse x m <*> t (traverse f sf)) (traversableNodePostulate1 f t) ⟩
+        pure (Deep v) <*> traverse (t ∘ f) pr <*> traverse (traverse (t ∘ f)) m <*> t (traverse f sf)
+    =⟨ cong (λ x → pure (Deep v) <*> traverse (t ∘ f) pr <*> traverse (traverse (t ∘ f)) m <*> x) (traversableDigitLaw1 f t sf) ⟩
+        pure (Deep v) <*> traverse (t ∘ f) pr <*> traverse (traverse (t ∘ f)) m <*> traverse (t ∘ f) sf
+    =⟨ cong (λ x → x <*> traverse (traverse (t ∘ f)) m <*> traverse (t ∘ f) sf) (sym (applicativeFmapApp (Deep v) (traverse (t ∘ f) pr))) ⟩
+        Deep v <$> traverse (t ∘ f) pr <*> traverse (traverse (t ∘ f)) m <*> traverse (t ∘ f) sf
+    ∎
+
+
+traversableElemLaw1 : {a b : Set}
+    → {p q : Set → Set} {{ap : Applicative p}} {{aq : Applicative q}}
+    → (f : a → p b) → (t : {x : Set} → p x → q x) → (m : Elem a)
+    → (t ∘ traverse f) m ≡ traverse (t ∘ f) m
+traversableElemLaw1 f t (Element x) = 
+    begin
+        t (Element <$> (f x))
+    =⟨ cong t (applicativeFmapApp Element (f x)) ⟩
+        t (pure Element <*> (f x))
+    =⟨ preserveApp t (pure Element) (f x) ⟩
+        t (pure Element) <*> t (f x)
+    =⟨ cong (_<*> t (f x)) (preservePure t Element) ⟩
+        pure Element <*> t (f x)
+    =⟨ sym (applicativeFmapApp Element (t (f x))) ⟩
+        (Element <$> (t (f x)))
+    ∎
+
+postulate
+    traversableElemPostulate1 : {a b : Set} → {p q : Set → Set} {{ap : Applicative p}} {{aq : Applicative q}} → (f : a → p b) → (t : {x : Set} → p x → q x) 
+                                → (t ∘ traverse ⦃ ElemTraversable ⦄ f) ≡ traverse (t ∘ f)
+
+traversableSeqLaw1 : {a b : Set}
+    → {p q : Set → Set} {{ap : Applicative p}} {{aq : Applicative q}}
+    → (f : a → p b) → (t : {x : Set} → p x → q x) → (m : Seq a)
+    → (t ∘ traverse f) m ≡ traverse (t ∘ f) m
+traversableSeqLaw1 f t (Sequence xs) = 
+    begin
+        t (Sequence <$> (traverse (traverse f) xs))
+    =⟨ cong t (applicativeFmapApp Sequence (traverse (traverse f) xs)) ⟩
+        t (pure Sequence <*> (traverse (traverse f) xs))
+    =⟨ preserveApp t (pure Sequence) (traverse (traverse f) xs) ⟩
+        t (pure Sequence) <*> t (traverse (traverse f) xs)
+    =⟨ cong (_<*> t (traverse (traverse f) xs)) (preservePure t Sequence) ⟩
+        pure Sequence <*> t (traverse (traverse f) xs)
+    =⟨ cong (pure Sequence <*>_) (traversableFingerTreeLaw1 (traverse f) t xs) ⟩
+        pure Sequence <*> traverse (t ∘ traverse f) xs
+    =⟨ cong (λ x → pure Sequence <*> traverse x xs) (traversableElemPostulate1 f t) ⟩
+        pure Sequence <*> traverse (traverse (t ∘ f)) xs
+    =⟨ sym (applicativeFmapApp Sequence (traverse (traverse (t ∘ f)) xs)) ⟩
+        Sequence <$> (traverse (traverse (t ∘ f)) xs)
     ∎

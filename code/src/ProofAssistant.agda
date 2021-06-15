@@ -47,6 +47,10 @@ postulate
     foldMapConcat : {a b : Set} -> (f : a -> List b) -> (xs ys : List a) -> foldMap f (xs ++ ys) ≡ foldMap f xs ++ foldMap f ys
     mapConcat : {a b : Set} -> (f : a -> b) -> (xs ys : List a) -> map f (xs ++ ys) ≡ map f xs ++ map f ys
     mapComposition : {a b c : Set} -> (f : b -> c) -> (g : a -> b) -> (xs : List a) -> map f (map g xs) ≡ map (f ∘ g) xs
+    preservePure : {a : Set} → {p q : Set → Set} ⦃ ap : Applicative p ⦄ ⦃ aq : Applicative q ⦄ → (t : {x' : Set} → p x' → q x') → (x : a) → t (pure x) ≡ pure x
+    preserveApp : {A B : Set} → {p q : Set → Set} ⦃ ap : Applicative p ⦄ ⦃ aq : Applicative q ⦄ → (t : {x' : Set} → p x' → q x') → (g : p (A → B)) (a : p A) 
+                                → t (g <*> a) ≡ (t g <*> t a)
+    applicativeFmapApp : {a b : Set} → {p : Set → Set} ⦃ ap : Applicative p ⦄ → (f : a -> b) → (x : p a) → (fmap f x) ≡ ((pure f) <*> x)
 
 -- THESE NEED TO BE PROVEN
 -- All of these can be proven because a mirror proof already exists
